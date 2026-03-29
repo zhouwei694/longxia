@@ -11,11 +11,13 @@ import com.example.longxia.model.dto.coupon.CouponGenerateRequest;
 import com.example.longxia.model.dto.coupon.CouponQueryRequest;
 import com.example.longxia.model.dto.coupon.CouponVerifyRequest;
 import com.example.longxia.model.entity.Coupon;
+import com.example.longxia.model.vo.CouponStatisticsVO;
 import com.example.longxia.model.vo.CouponVO;
 import com.example.longxia.service.CouponService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +36,15 @@ public class CouponController {
 
     @Autowired
     private CouponService couponService;
+
+    /**
+     * 卡券统计数据（管理员）
+     */
+    @GetMapping("/statistics")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<CouponStatisticsVO> getCouponStatistics() {
+        return ResultUtils.success(couponService.getCouponStatistics());
+    }
 
     /**
      * 生成卡券（管理员）

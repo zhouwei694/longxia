@@ -13,6 +13,7 @@ import com.example.longxia.model.dto.coupon.CouponVerifyRequest;
 import com.example.longxia.model.entity.Coupon;
 import com.example.longxia.model.entity.User;
 import com.example.longxia.model.enums.CouponStatusEnum;
+import com.example.longxia.model.vo.CouponStatisticsVO;
 import com.example.longxia.model.vo.CouponVO;
 import com.example.longxia.mapper.CouponMapper;
 import com.example.longxia.service.CouponService;
@@ -145,6 +146,19 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         coupon.setVerifyTime(LocalDateTime.now());
 
         return this.updateById(coupon);
+    }
+
+    @Override
+    public CouponStatisticsVO getCouponStatistics() {
+        CouponStatisticsVO vo = new CouponStatisticsVO();
+        vo.setInactiveCount(this.count(QueryWrapper.create().eq("status", CouponStatusEnum.INACTIVE.getValue())));
+        vo.setActiveCount(this.count(QueryWrapper.create().eq("status", CouponStatusEnum.ACTIVE.getValue())));
+        vo.setVerifiedCount(this.count(QueryWrapper.create().eq("status", CouponStatusEnum.VERIFIED.getValue())));
+        vo.setActiveDisplayAmount(this.mapper.sumDisplayAmountByStatus(CouponStatusEnum.ACTIVE.getValue()));
+        vo.setActiveActualAmount(this.mapper.sumActualAmountByStatus(CouponStatusEnum.ACTIVE.getValue()));
+        vo.setVerifiedDisplayAmount(this.mapper.sumDisplayAmountByStatus(CouponStatusEnum.VERIFIED.getValue()));
+        vo.setVerifiedActualAmount(this.mapper.sumActualAmountByStatus(CouponStatusEnum.VERIFIED.getValue()));
+        return vo;
     }
 
     @Override

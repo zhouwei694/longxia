@@ -4,6 +4,7 @@ import com.example.longxia.model.dto.coupon.CouponActivateRequest;
 import com.example.longxia.model.dto.coupon.CouponGenerateRequest;
 import com.example.longxia.model.dto.coupon.CouponQueryRequest;
 import com.example.longxia.model.dto.coupon.CouponVerifyRequest;
+import com.example.longxia.model.vo.CouponStatisticsVO;
 import com.example.longxia.model.vo.CouponVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
@@ -52,6 +53,11 @@ public interface CouponService extends IService<Coupon> {
      * @return 查询条件
      */
     QueryWrapper getQueryWrapper(CouponQueryRequest queryRequest);
+
+    /**
+     * 获取卡券统计数据
+     */
+    CouponStatisticsVO getCouponStatistics();
 
     /**
      * 实体转视图对象
