@@ -38,7 +38,8 @@ import java.util.stream.Collectors;
 @Service
 public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> implements CouponService {
 
-    private static final int GENERATE_COUNT = 100;
+    private static final int GENERATE_COUNT = 50;
+    private static final long COUPON_NO_START = 3202604010001L;
     private static final String PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int PASSWORD_LENGTH = 8;
 
@@ -65,14 +66,14 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         User loginUser = userService.getLoginUser(request);
         String createBy = loginUser.getUserName();
 
-        int startNo = getMaxCouponNo() + 1;
+        long startNo = getMaxCouponNo() + 1;
         LocalDateTime now = LocalDateTime.now();
 
         List<Coupon> couponList = new ArrayList<>();
         for (int i = 0; i < GENERATE_COUNT; i++) {
             Coupon coupon = new Coupon();
             coupon.setCouponName(couponName);
-            coupon.setCouponNo(String.format("%05d", startNo + i));
+            coupon.setCouponNo(String.valueOf(startNo + i));
             coupon.setCouponPassword(generatePassword());
             coupon.setDisplayAmount(generateRequest.getDisplayAmount());
             coupon.setActualAmount(generateRequest.getActualAmount());
@@ -200,15 +201,16 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
     /**
      * 获取当前数据库中最大的卡券号（数字部分）
      */
-    private int getMaxCouponNo() {
+    private long getMaxCouponNo() {
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .orderBy("coupon_no", false)
                 .limit(1);
         Coupon coupon = this.getOne(queryWrapper);
         if (coupon == null || StrUtil.isBlank(coupon.getCouponNo())) {
-            return 0;
+            return COUPON_NO_START - 1;
         }
-        return Integer.parseInt(coupon.getCouponNo());
+        long couponNo = Long.parseLong(coupon.getCouponNo());
+        return Math.max(couponNo, COUPON_NO_START - 1);
     }
 
     /**

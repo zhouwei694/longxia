@@ -1,6 +1,8 @@
 package com.example.longxia.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.poi.excel.ExcelUtil;
+import cn.hutool.poi.excel.ExcelWriter;
 import com.example.longxia.annotation.AuthCheck;
 import com.example.longxia.common.BaseResponse;
 import com.example.longxia.common.ResultUtils;
@@ -17,11 +19,13 @@ import com.example.longxia.model.entity.User;
 import com.example.longxia.model.enums.CouponStatusEnum;
 import com.example.longxia.model.enums.UserRoleEnum;
 import com.example.longxia.model.vo.CouponStatisticsVO;
+import com.example.longxia.model.vo.CouponExportVO;
 import com.example.longxia.model.vo.CouponVO;
 import com.example.longxia.service.CouponService;
 import com.example.longxia.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +36,9 @@ import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -106,6 +113,58 @@ public class CouponController {
         }
         couponVOPage.setRecords(couponVOList);
         return ResultUtils.success(couponVOPage);
+    }
+
+    /**
+     * 卡券导出
+     * 数据与卡券列表筛选条件保持一致，不导出卡券密码
+     */
+    @PostMapping("/export")
+    public void exportCoupons(@RequestBody CouponQueryRequest couponQueryRequest, HttpServletRequest request,
+                              HttpServletResponse response) {
+        ThrowUtils.throwIf(couponQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        UserRoleEnum userRoleEnum = UserRoleEnum.getEnumByValue(loginUser.getUserRole());
+        if (userRoleEnum == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+
+        List<Coupon> couponList = couponService.list(couponService.getQueryWrapper(couponQueryRequest));
+        List<CouponExportVO> exportVOList = couponList.stream().map(coupon -> {
+            CouponExportVO exportVO = new CouponExportVO();
+            BeanUtil.copyProperties(coupon, exportVO);
+            return exportVO;
+        }).sorted(Comparator.comparing(CouponExportVO::getId)).toList();
+
+        String fileName = URLEncoder.encode("卡券列表", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+        ExcelWriter writer = ExcelUtil.getWriter(true);
+        try {
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setHeader("Content-Disposition", "attachment;filename*=UTF-8''" + fileName + ".xlsx");
+            writer.renameSheet("卡券列表");
+            writer.addHeaderAlias("id", "ID");
+            writer.addHeaderAlias("couponName", "卡券名称");
+            writer.addHeaderAlias("couponNo", "卡券号");
+            writer.addHeaderAlias("displayAmount", "展示金额");
+            writer.addHeaderAlias("actualAmount", "实际金额");
+            writer.addHeaderAlias("status", "卡券状态");
+            writer.addHeaderAlias("createBy", "创建人");
+            writer.addHeaderAlias("verifyBy", "核销人");
+            writer.addHeaderAlias("createTime", "创建时间");
+            writer.addHeaderAlias("verifyTime", "核销时间");
+            writer.setOnlyAlias(true);
+            writer.write(exportVOList, true);
+            writer.flush(response.getOutputStream(), false);
+        } catch (Exception e) {
+            if (!response.isCommitted()) {
+                response.reset();
+                response.setContentType("application/json;charset=UTF-8");
+            }
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "导出失败");
+        } finally {
+            writer.close();
+        }
     }
 
     /**
