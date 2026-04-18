@@ -28,5 +28,15 @@ public class CouponGenerateRequest implements Serializable {
      */
     private BigDecimal actualAmount;
 
+    /**
+     * 卡券图片地址
+     */
+    private String couponUrl;
+
+    /**
+     * 生成数量（1~200）
+     */
+    private Integer count;
+
     private static final long serialVersionUID = 1L;
 }

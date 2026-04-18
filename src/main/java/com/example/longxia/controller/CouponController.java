@@ -1,6 +1,7 @@
 package com.example.longxia.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.example.longxia.annotation.AuthCheck;
@@ -12,6 +13,8 @@ import com.example.longxia.exception.ErrorCode;
 import com.example.longxia.exception.ThrowUtils;
 import com.example.longxia.common.DeleteRequest;
 import com.example.longxia.model.dto.coupon.CouponActivateRequest;
+import com.example.longxia.model.dto.coupon.CouponBatchDeleteRequest;
+import com.example.longxia.model.dto.coupon.CouponBatchUpdateRequest;
 import com.example.longxia.model.dto.coupon.CouponGenerateRequest;
 import com.example.longxia.model.dto.coupon.CouponQueryRequest;
 import com.example.longxia.model.dto.coupon.CouponUpdateRequest;
@@ -249,6 +252,57 @@ public class CouponController {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "只能删除未激活状态的卡券");
         }
         return ResultUtils.success(couponService.removeById(id));
+    }
+
+    /**
+     * 批量修改未激活卡券（管理员）
+     * 仅允许修改卡券名称、展示金额、实际金额
+     */
+    @PostMapping("/batch/update")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> batchUpdateCoupon(@RequestBody CouponBatchUpdateRequest request) {
+        ThrowUtils.throwIf(request == null || CollUtil.isEmpty(request.getIds()), ErrorCode.PARAMS_ERROR);
+        List<Coupon> couponList = couponService.list(QueryWrapper.create().in("id", request.getIds()));
+        if (CollUtil.isEmpty(couponList)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到对应卡券");
+        }
+        for (Coupon coupon : couponList) {
+            if (!CouponStatusEnum.INACTIVE.getValue().equals(coupon.getStatus())) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR,
+                        "卡券号 " + coupon.getCouponNo() + " 不是未激活状态，无法修改");
+            }
+            if (request.getCouponName() != null) {
+                coupon.setCouponName(request.getCouponName());
+            }
+            if (request.getDisplayAmount() != null) {
+                coupon.setDisplayAmount(request.getDisplayAmount());
+            }
+            if (request.getActualAmount() != null) {
+                coupon.setActualAmount(request.getActualAmount());
+            }
+        }
+        return ResultUtils.success(couponService.updateBatch(couponList));
+    }
+
+    /**
+     * 批量删除未激活卡券（管理员）
+     * 物理删除
+     */
+    @PostMapping("/batch/delete")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> batchDeleteCoupon(@RequestBody CouponBatchDeleteRequest request) {
+        ThrowUtils.throwIf(request == null || CollUtil.isEmpty(request.getIds()), ErrorCode.PARAMS_ERROR);
+        List<Coupon> couponList = couponService.list(QueryWrapper.create().in("id", request.getIds()));
+        if (CollUtil.isEmpty(couponList)) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到对应卡券");
+        }
+        for (Coupon coupon : couponList) {
+            if (!CouponStatusEnum.INACTIVE.getValue().equals(coupon.getStatus())) {
+                throw new BusinessException(ErrorCode.OPERATION_ERROR,
+                        "卡券号 " + coupon.getCouponNo() + " 不是未激活状态，无法删除");
+            }
+        }
+        return ResultUtils.success(couponService.removeByIds(request.getIds()));
     }
 
     /**

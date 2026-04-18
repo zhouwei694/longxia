@@ -100,4 +100,9 @@ public class Coupon implements Serializable {
      */
     private String recipientExpressNo;
 
+    /**
+     * 卡券图片地址
+     */
+    private String couponUrl;
+
 }

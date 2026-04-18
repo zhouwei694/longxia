@@ -184,5 +184,32 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
                 .orderBy(sortField, "ascend".equals(sortOrder));
     }
 
+    @Override
+    public boolean changePassword(String oldPassword, String newPassword, String checkPassword, HttpServletRequest request) {
+        if (StrUtil.hasBlank(oldPassword, newPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数不能为空");
+        }
+        if (newPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码长度不能少于8位");
+        }
+        if (!newPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的新密码不一致");
+        }
+        User loginUser = getLoginUser(request);
+        String encryptOldPassword = getEncryptPassword(oldPassword);
+        if (!encryptOldPassword.equals(loginUser.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "旧密码错误");
+        }
+        String encryptNewPassword = getEncryptPassword(newPassword);
+        User updateUser = new User();
+        updateUser.setId(loginUser.getId());
+        updateUser.setUserPassword(encryptNewPassword);
+        boolean result = this.updateById(updateUser);
+        if (result) {
+            // 修改成功后移除登录态，需要重新登录
+            request.getSession().removeAttribute(USER_LOGIN_STATE);
+        }
+        return result;
+    }
 
 }

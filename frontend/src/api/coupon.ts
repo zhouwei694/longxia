@@ -10,6 +10,8 @@ import type {
   CouponVerifyRequest,
   CouponUpdateRequest,
   CouponVerifiedUpdateRequest,
+  CouponBatchUpdateRequest,
+  CouponBatchDeleteRequest,
 } from '../types'
 
 export function getCouponStatistics(): Promise<BaseResponse<CouponStatisticsVO>> {
@@ -58,4 +60,12 @@ export function deleteCoupon(id: number): Promise<BaseResponse<boolean>> {
 
 export function updateVerifiedCoupon(data: CouponVerifiedUpdateRequest): Promise<BaseResponse<boolean>> {
   return request.post('/coupon/update/verified', data)
+}
+
+export function batchUpdateCoupon(data: CouponBatchUpdateRequest): Promise<BaseResponse<boolean>> {
+  return request.post('/coupon/batch/update', data)
+}
+
+export function batchDeleteCoupon(data: CouponBatchDeleteRequest): Promise<BaseResponse<boolean>> {
+  return request.post('/coupon/batch/delete', data)
 }

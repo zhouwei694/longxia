@@ -79,5 +79,10 @@ public class CouponVO implements Serializable {
      */
     private String recipientExpressNo;
 
+    /**
+     * 卡券图片地址
+     */
+    private String couponUrl;
+
     private static final long serialVersionUID = 1L;
 }

@@ -38,7 +38,9 @@ import java.util.stream.Collectors;
 @Service
 public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> implements CouponService {
 
-    private static final int GENERATE_COUNT = 50;
+    private static final int DEFAULT_GENERATE_COUNT = 50;
+    private static final int MAX_GENERATE_COUNT = 200;
+    private static final int MIN_GENERATE_COUNT = 1;
     private static final long COUPON_NO_START = 3202604010001L;
     private static final String PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     private static final int PASSWORD_LENGTH = 8;
@@ -63,6 +65,12 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "卡券实际金额不能为空");
         }
 
+        // 生成数量校验
+        int count = generateRequest.getCount() != null ? generateRequest.getCount() : DEFAULT_GENERATE_COUNT;
+        if (count < MIN_GENERATE_COUNT || count > MAX_GENERATE_COUNT) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "生成数量必须在1~200之间");
+        }
+
         User loginUser = userService.getLoginUser(request);
         String createBy = loginUser.getUserName();
 
@@ -70,7 +78,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
         LocalDateTime now = LocalDateTime.now();
 
         List<Coupon> couponList = new ArrayList<>();
-        for (int i = 0; i < GENERATE_COUNT; i++) {
+        for (int i = 0; i < count; i++) {
             Coupon coupon = new Coupon();
             coupon.setCouponName(couponName);
             coupon.setCouponNo(String.valueOf(startNo + i));
@@ -80,6 +88,7 @@ public class CouponServiceImpl extends ServiceImpl<CouponMapper, Coupon> impleme
             coupon.setStatus(CouponStatusEnum.INACTIVE.getValue());
             coupon.setCreateBy(createBy);
             coupon.setCreateTime(now);
+            coupon.setCouponUrl(generateRequest.getCouponUrl());
             couponList.add(coupon);
         }
 
