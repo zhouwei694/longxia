@@ -252,11 +252,10 @@ public class CouponController {
     }
 
     /**
-     * 修改已核销卡券（管理员）
+     * 修改已核销卡券
      * 仅允许修改收件人电话、收件人快递号
      */
     @PostMapping("/update/verified")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateVerifiedCoupon(@RequestBody CouponVerifiedUpdateRequest request) {
         ThrowUtils.throwIf(request == null || request.getId() == null, ErrorCode.PARAMS_ERROR);
         Long id = request.getId();
