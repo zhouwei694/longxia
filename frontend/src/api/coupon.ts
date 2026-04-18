@@ -8,6 +8,8 @@ import type {
   CouponGenerateRequest,
   CouponActivateRequest,
   CouponVerifyRequest,
+  CouponUpdateRequest,
+  CouponVerifiedUpdateRequest,
 } from '../types'
 
 export function getCouponStatistics(): Promise<BaseResponse<CouponStatisticsVO>> {
@@ -40,4 +42,20 @@ export function verifyCoupon(
 
 export function exportCoupons(data: CouponQueryRequest): Promise<Blob> {
   return request.postBlob('/coupon/export', data)
+}
+
+export function updateCoupon(data: CouponUpdateRequest): Promise<BaseResponse<boolean>> {
+  return request.post('/coupon/update', data)
+}
+
+export function activateSingleCoupon(id: number): Promise<BaseResponse<boolean>> {
+  return request.post('/coupon/activate/single', { id })
+}
+
+export function deleteCoupon(id: number): Promise<BaseResponse<boolean>> {
+  return request.post('/coupon/delete', { id })
+}
+
+export function updateVerifiedCoupon(data: CouponVerifiedUpdateRequest): Promise<BaseResponse<boolean>> {
+  return request.post('/coupon/update/verified', data)
 }

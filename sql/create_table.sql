@@ -40,8 +40,13 @@ CREATE TABLE if not exists `coupon` (
                           `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间',
                           `verify_time` datetime DEFAULT NULL COMMENT '核销时间',
+                          `recipient_phone` varchar(20) DEFAULT NULL COMMENT '收件人电话',
+                          `recipient_express_no` varchar(50) DEFAULT NULL COMMENT '收件人快递号',
                           PRIMARY KEY (`id`),
                           UNIQUE KEY `uk_coupon_no` (`coupon_no`),
                           KEY `idx_status` (`status`),
                           KEY `idx_create_time` (`create_time`)
 ) COMMENT='卡券表' collate = utf8mb4_unicode_ci;
+
+ALTER TABLE coupon ADD COLUMN `recipient_phone` varchar(20) DEFAULT NULL COMMENT '收件人电话';
+ALTER TABLE coupon ADD COLUMN `recipient_express_no` varchar(50) DEFAULT NULL COMMENT '收件人快递号';

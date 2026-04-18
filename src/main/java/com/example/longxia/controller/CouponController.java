@@ -10,9 +10,12 @@ import com.example.longxia.constant.UserConstant;
 import com.example.longxia.exception.BusinessException;
 import com.example.longxia.exception.ErrorCode;
 import com.example.longxia.exception.ThrowUtils;
+import com.example.longxia.common.DeleteRequest;
 import com.example.longxia.model.dto.coupon.CouponActivateRequest;
 import com.example.longxia.model.dto.coupon.CouponGenerateRequest;
 import com.example.longxia.model.dto.coupon.CouponQueryRequest;
+import com.example.longxia.model.dto.coupon.CouponUpdateRequest;
+import com.example.longxia.model.dto.coupon.CouponVerifiedUpdateRequest;
 import com.example.longxia.model.dto.coupon.CouponVerifyRequest;
 import com.example.longxia.model.entity.Coupon;
 import com.example.longxia.model.entity.User;
@@ -24,6 +27,7 @@ import com.example.longxia.model.vo.CouponVO;
 import com.example.longxia.service.CouponService;
 import com.example.longxia.service.UserService;
 import com.mybatisflex.core.paginate.Page;
+import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,7 +121,7 @@ public class CouponController {
 
     /**
      * 卡券导出
-     * 数据与卡券列表筛选条件保持一致，不导出卡券密码
+     * 导出所有未激活状态的卡券，只展示id、卡券名称、卡券号、卡券密码
      */
     @PostMapping("/export")
     public void exportCoupons(@RequestBody CouponQueryRequest couponQueryRequest, HttpServletRequest request,
@@ -129,7 +133,9 @@ public class CouponController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
 
-        List<Coupon> couponList = couponService.list(couponService.getQueryWrapper(couponQueryRequest));
+        // 只查询未激活状态的卡券
+        List<Coupon> couponList = couponService.list(
+                QueryWrapper.create().eq("status", CouponStatusEnum.INACTIVE.getValue()));
         List<CouponExportVO> exportVOList = couponList.stream().map(coupon -> {
             CouponExportVO exportVO = new CouponExportVO();
             BeanUtil.copyProperties(coupon, exportVO);
@@ -146,13 +152,7 @@ public class CouponController {
             writer.addHeaderAlias("id", "ID");
             writer.addHeaderAlias("couponName", "卡券名称");
             writer.addHeaderAlias("couponNo", "卡券号");
-            writer.addHeaderAlias("displayAmount", "展示金额");
-            writer.addHeaderAlias("actualAmount", "实际金额");
-            writer.addHeaderAlias("status", "卡券状态");
-            writer.addHeaderAlias("createBy", "创建人");
-            writer.addHeaderAlias("verifyBy", "核销人");
-            writer.addHeaderAlias("createTime", "创建时间");
-            writer.addHeaderAlias("verifyTime", "核销时间");
+            writer.addHeaderAlias("couponPassword", "卡券密码");
             writer.setOnlyAlias(true);
             writer.write(exportVOList, true);
             writer.flush(response.getOutputStream(), false);
@@ -189,5 +189,84 @@ public class CouponController {
         ThrowUtils.throwIf(couponVerifyRequest == null, ErrorCode.PARAMS_ERROR);
         boolean result = couponService.verifyCoupon(couponVerifyRequest, request);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 修改未激活卡券（管理员）
+     * 仅允许修改卡券名称、展示金额、实际金额
+     */
+    @PostMapping("/update")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> updateCoupon(@RequestBody CouponUpdateRequest couponUpdateRequest) {
+        ThrowUtils.throwIf(couponUpdateRequest == null || couponUpdateRequest.getId() == null, ErrorCode.PARAMS_ERROR);
+        Long id = couponUpdateRequest.getId();
+        Coupon coupon = couponService.getById(id);
+        ThrowUtils.throwIf(coupon == null, ErrorCode.NOT_FOUND_ERROR, "卡券不存在");
+        if (!CouponStatusEnum.INACTIVE.getValue().equals(coupon.getStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "只能修改未激活状态的卡券");
+        }
+        if (couponUpdateRequest.getCouponName() != null) {
+            coupon.setCouponName(couponUpdateRequest.getCouponName());
+        }
+        if (couponUpdateRequest.getDisplayAmount() != null) {
+            coupon.setDisplayAmount(couponUpdateRequest.getDisplayAmount());
+        }
+        if (couponUpdateRequest.getActualAmount() != null) {
+            coupon.setActualAmount(couponUpdateRequest.getActualAmount());
+        }
+        return ResultUtils.success(couponService.updateById(coupon));
+    }
+
+    /**
+     * 单个激活未激活卡券（管理员）
+     */
+    @PostMapping("/activate/single")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> activateSingleCoupon(@RequestBody DeleteRequest deleteRequest) {
+        ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() == null, ErrorCode.PARAMS_ERROR);
+        Long id = deleteRequest.getId();
+        Coupon coupon = couponService.getById(id);
+        ThrowUtils.throwIf(coupon == null, ErrorCode.NOT_FOUND_ERROR, "卡券不存在");
+        if (!CouponStatusEnum.INACTIVE.getValue().equals(coupon.getStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "只能激活未激活状态的卡券");
+        }
+        coupon.setStatus(CouponStatusEnum.ACTIVE.getValue());
+        return ResultUtils.success(couponService.updateById(coupon));
+    }
+
+    /**
+     * 删除未激活卡券（管理员）
+     * 物理删除
+     */
+    @PostMapping("/delete")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> deleteCoupon(@RequestBody DeleteRequest deleteRequest) {
+        ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() == null, ErrorCode.PARAMS_ERROR);
+        Long id = deleteRequest.getId();
+        Coupon coupon = couponService.getById(id);
+        ThrowUtils.throwIf(coupon == null, ErrorCode.NOT_FOUND_ERROR, "卡券不存在");
+        if (!CouponStatusEnum.INACTIVE.getValue().equals(coupon.getStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "只能删除未激活状态的卡券");
+        }
+        return ResultUtils.success(couponService.removeById(id));
+    }
+
+    /**
+     * 修改已核销卡券（管理员）
+     * 仅允许修改收件人电话、收件人快递号
+     */
+    @PostMapping("/update/verified")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> updateVerifiedCoupon(@RequestBody CouponVerifiedUpdateRequest request) {
+        ThrowUtils.throwIf(request == null || request.getId() == null, ErrorCode.PARAMS_ERROR);
+        Long id = request.getId();
+        Coupon coupon = couponService.getById(id);
+        ThrowUtils.throwIf(coupon == null, ErrorCode.NOT_FOUND_ERROR, "卡券不存在");
+        if (!CouponStatusEnum.VERIFIED.getValue().equals(coupon.getStatus())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "只能修改已核销状态的卡券");
+        }
+        coupon.setRecipientPhone(request.getRecipientPhone());
+        coupon.setRecipientExpressNo(request.getRecipientExpressNo());
+        return ResultUtils.success(couponService.updateById(coupon));
     }
 }

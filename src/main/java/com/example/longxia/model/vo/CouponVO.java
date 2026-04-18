@@ -69,5 +69,15 @@ public class CouponVO implements Serializable {
      */
     private LocalDateTime verifyTime;
 
+    /**
+     * 收件人电话
+     */
+    private String recipientPhone;
+
+    /**
+     * 收件人快递号
+     */
+    private String recipientExpressNo;
+
     private static final long serialVersionUID = 1L;
 }
