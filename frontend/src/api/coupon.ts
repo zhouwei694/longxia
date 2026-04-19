@@ -69,3 +69,7 @@ export function batchUpdateCoupon(data: CouponBatchUpdateRequest): Promise<BaseR
 export function batchDeleteCoupon(data: CouponBatchDeleteRequest): Promise<BaseResponse<boolean>> {
   return request.post('/coupon/batch/delete', data)
 }
+
+export function uploadCouponImage(file: File): Promise<BaseResponse<string>> {
+  return request.upload('/file/upload', file)
+}

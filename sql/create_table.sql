@@ -52,3 +52,4 @@ ALTER TABLE coupon ADD COLUMN `recipient_phone` varchar(20) DEFAULT NULL COMMENT
 ALTER TABLE coupon ADD COLUMN `recipient_express_no` varchar(50) DEFAULT NULL COMMENT '收件人快递号';
 ALTER TABLE coupon ADD COLUMN `coupon_url` MEDIUMTEXT DEFAULT NULL COMMENT '卡券图片地址';
 ALTER TABLE coupon MODIFY COLUMN `coupon_url` MEDIUMTEXT DEFAULT NULL COMMENT '卡券图片地址';
+TRUNCATE TABLE coupon;

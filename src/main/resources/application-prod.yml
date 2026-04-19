@@ -12,6 +12,13 @@ server:
   port: 8923
   servlet:
     context-path: /api
+spring.servlet.multipart:
+  max-file-size: 5MB
+  max-request-size: 10MB
+
+file:
+  upload-dir: uploads
+
 
 
 # springdoc-openapi
